@@ -69,3 +69,7 @@ hFire      10 581012 1980.29 1324.20    0 7173  7173 1.74
 #this means there are 211840 instances of tree type 1 (spruce/fir), 283301 instances of tree type 2 (lodgepole pine), 35754 instances of tree type 3 (ponderosa pine), 2747 instances of tree type 4 (cottonwood/willow), 9493 instances of tree type 5 (aspen), 17367 instances of tree type 6 (douglas-fir), and 20510 instances of tree type 7 (krummholz). Tree type 2, or lodgepole pine, is the most frequent tree type found in the national forest. Cottonwood/willow trees are the most rare tree type in the forest.
 #looking distribution of elevation
 > ggplot(data, aes(x=elev))+geom_histogram(binwidth=50)
+#see image Rplot_elevhist.png for result
+
+
+
