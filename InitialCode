@@ -1,0 +1,71 @@
+# CIND820_FinalProject_ForestCoverType
+CIND820 Final Project - Forest Cover Type
+Initial Code
+
+> library(tidyverse)
+> library(ggplot2)
+> library(psych)
+#import data
+> covtype.data <- read.csv("~/School/CIND820/data/covtype.data.gz", header=FALSE, stringsAsFactors=TRUE)
+> View(covtype.data)
+#change data name
+> data<-covtype.data
+#look at first few rows of data
+> head(data)
+#add column names to data based off covtype.info document
+> colnames(data)<-c("elev", "aspect", "slope", "hHydro", "vHydro", "hRoad", "hs09", "hs12", "hs15", "hFire", "wild1", "wild2", "wild3", "wild4", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15", "s16", "s17", "s18", "s19", "s20", "s21", "s22", "s23", "s24", "s25", "s26", "s27", "s28", "s29", "s30", "s31", "s32", "s33", "s34", "s35", "s36", "s37", "s38", "s39", "s40", "treeType")
+#verify column names have been changed
+> head(data)
+#look at last few rows of data
+> tail(data)
+#look at structure of data
+> str(data)
+#look at basic stats of data
+> summary(data)
+#mean elevation of the area is 2959 m
+#mean distance to water is 269.4 m
+#mean distance to roads is 2350 m
+#for tree type, the median tree type is number 2 (lodgepole pine)
+#summary function not really useful for wilderness area or soil types as these are multiple binary columns, so we will use a different code to count the number of instances for the different soil types
+#determine soil type counts
+> sum(data$s1 !=0)
+[1] 3031
+> sum(data$s32 !=0)
+[1] 52519
+#soil type 32 has the most instances of 52519 (it also has the highest mean value from the summary function)
+#use psych package for a closer look at data
+> describe(data)
+         vars      n    mean      sd  min  max range   se
+elev        1 581012 2959.37  279.98 1859 3858  1999 0.37
+aspect      2 581012  155.66  111.91    0  360   360 0.15
+slope       3 581012   14.10    7.49    0   66    66 0.01
+hHydro      4 581012  269.43  212.55    0 1397  1397 0.28
+vHydro      5 581012   46.42   58.30 -173  601   774 0.08
+hRoad       6 581012 2350.15 1559.25    0 7117  7117 2.05
+hs09        7 581012  212.15   26.77    0  254   254 0.04
+hs12        8 581012  223.32   19.77    0  254   254 0.03
+hs15        9 581012  142.53   38.27    0  254   254 0.05
+hFire      10 581012 1980.29 1324.20    0 7173  7173 1.74
+#gives mean and standard deviation for all attributes, but only useful for first 10 attributes
+#create table for wilderness types
+> table(data$wild1)
+     0      1 
+320216 260796 
+> table(data$wild2)
+     0      1 
+551128  29884 
+> table(data$wild3)
+     0      1 
+327648 253364 
+> table(data$wild4)
+     0      1 
+544044  36968
+#this indicates that there are 260796 instances for wilderness area 1 (Rawah), 29884 instances for wilderness area 2 (Neota), 253364 instances for wilderness area 3 (Comanche Peak), and 36968 instances for wilderness area 4 (Cache la Poudre)
+#the Rawah wilderness area has the most instances in the collected data, next is Comanche Peak
+#create table of tree types
+> table(data$treeTypes)
+     1      2      3      4      5      6      7 
+211840 283301  35754   2747   9493  17367  20510 
+#this means there are 211840 instances of tree type 1 (spruce/fir), 283301 instances of tree type 2 (lodgepole pine), 35754 instances of tree type 3 (ponderosa pine), 2747 instances of tree type 4 (cottonwood/willow), 9493 instances of tree type 5 (aspen), 17367 instances of tree type 6 (douglas-fir), and 20510 instances of tree type 7 (krummholz). Tree type 2, or lodgepole pine, is the most frequent tree type found in the national forest. Cottonwood/willow trees are the most rare tree type in the forest.
+#looking distribution of elevation
+> ggplot(data, aes(x=elev))+geom_histogram(binwidth=50)
