@@ -24,3 +24,5 @@ Current Progress
 
 Future Goals
 - combine the binary columns of each category (wilderness area, soil type, cover type) to make one column per attribute
+
+Link for dataset: https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/
