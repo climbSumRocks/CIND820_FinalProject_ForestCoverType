@@ -18,6 +18,7 @@ Current Progress
 - added libraries
 - imported dataset
 - started initial data analysis
+- created RMarkdown html file
 
 Future Goals
 - combine the binary columns of each category (wilderness area, soil type) to make one column per attribute
