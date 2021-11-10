@@ -15,14 +15,13 @@ Stages of Project
 
 Current Progress
 - updated R to version 4.1.2
-- added tidyverse package to R
+- added libraries
 - imported dataset
-- looked at first few rows
-- added attribute column headers
-- performed initial data analysis to get a better understanding of the data
-- divided data into test and train sets for analysis
+- started initial data analysis
 
 Future Goals
-- combine the binary columns of each category (wilderness area, soil type, cover type) to make one column per attribute
+- combine the binary columns of each category (wilderness area, soil type) to make one column per attribute
+- continue data analysis
+- start classification and prediction analysis
 
 Link for dataset: https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/
