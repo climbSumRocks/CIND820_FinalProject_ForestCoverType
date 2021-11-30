@@ -25,6 +25,8 @@ library(GGally)
 library(scales)
 library(texreg)
 library(corrplot)
+library(caret)
+library(randomForest)
 ```
 ## Data Exploration
 Loading the data
