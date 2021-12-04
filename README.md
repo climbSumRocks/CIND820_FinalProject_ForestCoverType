@@ -13,16 +13,15 @@ Stages of Project
 - compare results of different analysis methods
 - create report to show results
 
-Current Progress
-- updated R to version 4.1.2
-- added libraries
-- imported dataset
-- started initial data analysis
-- created RMarkdown html file
-
-Future Goals
-- combine the binary columns of each category (wilderness area, soil type) to make one column per attribute
-- continue data analysis
-- start classification and prediction analysis
+Current Progress - FINISHED
+- update R to version 4.1.2
+- add libraries
+- import dataset
+- create RMarkdown html file
+- combine binary columns into their own attribute columns
+- calculate eucidean distance to water feature
+- perform perliminary data anlysis
+- perform classification of data using K-nn and Random Forest
+- compare models
 
 Link for dataset: https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/
