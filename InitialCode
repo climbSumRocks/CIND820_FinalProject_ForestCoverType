@@ -1,22 +1,19 @@
-# CIND820_FinalProject_ForestCoverType
-CIND820 Final Project - Forest Cover Type
 ---
-title: "Initial Code for Classification & Prediction of Forest Cover in Roosevelt National Park, CO, USA"
-date: "09 November 2021"
+title: "code2"
 author: "Haley Aldred"
-course: "CIND820"
+date: "04/12/2021"
 output: html_document
 ---
 
-```{r include=FALSE}
-knitr::opts_chunk$set(comment=NA)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 ```
 # Introduction
-This report contains my initial code for examining my data set, which will be used in classifying and predicting forest cover types in Roosevelt National Forest in Colorado, USA. My data comes from the UCI Machine Learning Repository (https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/).
+This report contains my code for examining my data set, which will be used in classifying and predicting forest cover types in Roosevelt National Forest in Colorado, USA. My data comes from the UCI Machine Learning Repository (https://archive.ics.uci.edu/ml/machine-learning-databases/covtype/).
 
 # Preparation Work
 ## Loading Libraries
-```{r, echo=FALSE}
+```{r}
 library(ggplot2)
 library(tidyverse)
 library(dplyr)
@@ -26,78 +23,181 @@ library(scales)
 library(texreg)
 library(corrplot)
 library(caret)
+library(lattice)
+library(e1071)
+library(class)
 library(randomForest)
 ```
 ## Data Exploration
-Loading the data
+Loading the data.
 ```{r}
-covtype.data <- read.csv("~/School/CIND820/data/covtype.data.gz", header=FALSE, stringsAsFactors=TRUE)
-View(covtype.data)
+data <- read.csv("~/School/CIND820/data/covtype.data.gz", header=FALSE, stringsAsFactors=TRUE)
+#View(data)
 ```
-Changing the name of the data
-```{r}
-data<-covtype.data
-```
-Looking at the first few rows of data
+Looking at the first few rows of data.
 ```{r}
 head(data)
 ```
-Adding column names based off the *covtype.info* document
+Adding column names based off the *covtype.info* document.
 ```{r}
 colnames(data)<-c("elev", "aspect", "slope", "hHydro", "vHydro", "hRoad", "hs09", "hs12", "hs15", "hFire", "wild1", "wild2", "wild3", "wild4", "s1", "s2", "s3", "s4", "s5", "s6", "s7", "s8", "s9", "s10", "s11", "s12", "s13", "s14", "s15", "s16", "s17", "s18", "s19", "s20", "s21", "s22", "s23", "s24", "s25", "s26", "s27", "s28", "s29", "s30", "s31", "s32", "s33", "s34", "s35", "s36", "s37", "s38", "s39", "s40", "treeType")
 ```
-Verifying the column names have been updated
+Verifying the column names have been updated.
 ```{r}
 head(data)
 ```
-Looking at the last few rows of data
+Looking at the last few rows of data.
 ```{r}
 tail(data)
 ```
-Verifying that there are no missing values
+Verifying that there are no missing values.
 ```{r}
 colSums(is.na(data))
 ```
-Looking at the structure of the data
+Getting rid of binary wilderness area type and soil type columns. This will be done by concatenating the binary columns, converting them to numeric, and finding the log of the binary number.
 ```{r}
-str(data)
+data$wildArea<-paste(data$wild1,data$wild2,data$wild3,data$wild4,sep="")
+data$wildArea<-as.numeric(as.character(data$wildArea))
+data$area<-(4-log(data$wildArea,10))
 ```
-Looking at the basic data statistics
+Next, we will do the same procedure for the 40 different soil types.
 ```{r}
-summary(data)
+data$soilType<-paste(data$s1,data$s2,data$s3,data$s4,data$s5,data$s6,data$s7,data$s8,data$s9,data$s10,data$s11,data$s12,data$s13,data$s14,data$s15,data$s16,data$s17,data$s18,data$s19,data$s20,data$s21,data$s22,data$s23,data$s24,data$s25,data$s26,data$s27,data$s28,data$s29,data$s30,data$s31,data$s32,data$s33,data$s34,data$s35,data$s36,data$s37,data$s38,data$s39,data$s40, sep="")
+data$soilTypes<-as.numeric(as.character(data$soilType))
+data$soil<-(40-log(data$soilTypes,10))
+```
+Now to delete the useless columns. By eliminating a combined 42 columns, it will make the data easier to work with in the future without losing any critical information.
+```{r}
+data<-select(data,-c(wild1,wild2,wild3,wild4,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14,s15,s16,s17,s18,s19,s20,s21,s22,s23,s24,s25,s26,s27,s28,s29,s30,s31,s32,s33,s34,s35,s36,s37,s38,s39,s40,wildArea,soilType,soilTypes))
+```
+Verify the process worked.
+```{r}
+head(data)
+tail(data)
+```
+Identifying tree types, adding a column for tree name
+```{r}
+data$treeName = 'a'
+data$treeName[data$treeType==1] = 'Spruce-fir'
+data$treeName[data$treeType==2] = 'Lodgepole Pine'
+data$treeName[data$treeType==3] = 'Ponderosa Pine'
+data$treeName[data$treeType==4] = 'Cottonwood-Willow'
+data$treeName[data$treeType==5] = 'Aspen'
+data$treeName[data$treeType==6] = 'Douglas-fir'
+data$treeName[data$treeType==7] = 'Krummholz'
+```
+Identifying areas, adding a column for area name
+```{r}
+data$areaName = 'a'
+data$areaName[data$area==1] = 'Rawah'
+data$areaName[data$area==2] = 'Neota'
+data$areaName[data$area==3] = 'Comanche Peak'
+data$areaName[data$area==4] = 'Cache La Poudre'
+```
+Looking at the structure of the data. We will first create a dataset without the names.
+```{r}
+forest<-select(data,-c(treeName,areaName))
+str(forest)
+```
+Looking at the basic data statistics.
+```{r}
+summary(forest)
 ```
 The mean elevation of the area is 2959 m. The mean distance to water is 269.4 m. The mean distance to roads is 2350 m.The median tree type is number 2, also known as the lodgepole pine.
-The summary function is not really useful for wilderness area or soil type attributes as they are multiple binary columns. 
-
-To determine soil count numbers, the sum function will be used.
-```{r}
-sum(data$s1 !=0)
-sum(data$s32 !=0)
-```
-Soil type 32 has the most instances of 52519 (it also has the highest mean value from the summary function).
+The median wilderness area is number 2, also know as Neota, and the median soil type is type 29, also know as Como which contains Legault families complex, extremely stony.
 
 The psych package will be used to take a closer look at the data.
 ```{r}
-describe(data)
-```
-This gives a mean and standard deviation for all attributes, but it is only useful for first 10 attributes.
-Lets create a table for each wilderness type to view the number of instances for each attribute.
-```{r}
-table(data$wild1)
-table(data$wild2)
-table(data$wild3)
-table(data$wild4)
+describe(forest)
 ```
 This indicates that there are 260796 instances for wilderness area 1 (Rawah), 29884 instances for wilderness area 2 (Neota), 253364 instances for wilderness area 3 (Comanche Peak), and 36968 instances for wilderness area 4 (Cache la Poudre).
 The Rawah wilderness area has the most instances in the collected data, next is Comanche Peak.
 
 Lets create a table of the different tree types.
 ```{r}
-table(data$treeType)
+table(data$treeName)
 ```
 This means there are 211840 instances of tree type 1 (spruce/fir), 283301 instances of tree type 2 (lodgepole pine), 35754 instances of tree type 3 (ponderosa pine), 2747 instances of tree type 4 (cottonwood/willow), 9493 instances of tree type 5 (aspen), 17367 instances of tree type 6 (douglas-fir), and 20510 instances of tree type 7 (krummholz). Tree type 2, or lodgepole pine, is the most frequent tree type found in the national forest. Cottonwood/willow trees are the most rare tree type in the forest.
 
-Lets look at the distribution of elevation for the data set.
+We will do the same for the wilderness areas and soil types.
 ```{r}
-ggplot(data, aes(x=elev))+geom_histogram(binwidth=50)
+table(data$areaName)
+table(data$soil)
+```
+## Data Visualization
+Let's look at the distribution of elevation for the data set.
+```{r}
+ggplot(data, aes(x=elev))+geom_histogram(breaks=seq(1500,4000,by=100),col="black",aes(fill=..count..))+scale_fill_gradient("Count",low="green",high="red")+labs(title="Histogram of Elevation",x="Elevation (m)",y="Count")
+ggplot(data, aes(x=elev)) + geom_density()+labs(title="Density of Elevation",x="Elevation (m)",y="Density")
+ggplot(data, aes(x=elev)) + geom_density(aes(group=treeName, colour=treeName, fill=treeName), alpha=0.3)+labs(title="Tree Density by Elevation",x="Elevation (m)",y="Density")
+
+```
+Let's look at the distribution of soil types for the data set.
+```{r}
+ggplot(data=data, aes(soil))+geom_histogram(breaks=seq(1,40,by=1),col="black",aes(fill=..count..))+scale_fill_gradient("Count",low="green",high="red")+labs(title="Histogram of Soil Types",x="Soil Type",y="Count")
+ggplot(data,aes(areaName))+geom_density(aes(group=soil,colour=soil,fill=soil),alpha=0.3)+labs(main="Soils based on Wilderness Area",x="Wilderness Area",y="Density")
+```
+Let's look at the distribution of tree types for the data set.
+```{r}
+ggplot(data=data, aes(treeType))+geom_histogram(col="black",aes(fill=..count..))+scale_fill_gradient("Count",low="green",high="red")+labs(title="Histogram of Tree Types",x="Tree Type Type",y="Count")
+ggplot(data, aes(x=areaName)) + geom_density(aes(group=treeName, colour=treeName, fill=treeName), alpha=0.3)+labs(main="Tree Density by Area",x="Area Name",y="Density")
+```
+Next, we will create a correlation matrix of the data.
+```{r}
+corForest<-cor(forest)
+head(corForest)
+```
+Now we will create a correlogram to visualize the correlation matrix.
+```{r}
+pairs(corForest)
+```
+!!!!Describe corrplot
+
+##Data Analysis
+We will split the data into testing and training samples for our detailed analysis. Due to RAM constraints, we will use a small subsection of the large dataset.
+```{r}
+set.seed(42)
+index1<- sample((1/500)*nrow(data), replace = FALSE)
+data<- data[index1,]
+sample_size=round(nrow(forest)*.70)
+index<-sample(seq_len(nrow(forest)),size=sample_size)
+train<-forest[index, ]
+test<-forest[-index, ]
+```
+Correlation between the attributes other than tree type.
+```{r}
+forest<-forest %>% relocate(treeType,.after=soil)
+datacorr=cor(forest[-13])
+datacorr
+corrplot.mixed(datacorr,lower.col="black",number.cex=0.75)
+```
+The K-nearest neighbour algorithm will be used to predict the tree type using its attributes. The data will be split into training and test sets.
+```{r}
+
+predictK<-knn(train = train[,1:12], test = test[,1:12], cl = as.factor(train$treeType), k = 3)
+plot(predictK)
+
+```
+Now let's look at the confusion matrix to determine the accuracy and efficiency of the model. -n justify 3 as optimal k
+```{r}
+confMatrix<-table(predictK,test$treeType)
+confusionMatrix(confMatrix)
+```
+The accuracy of the model is XXX
+
+Now we will look at the Random Forest Classifier.
+```{r}
+classifier=randomForest(factor(train$treeType)~.,data=train)
+plot(classifier,main="Random Forest Classification")
+```
+Now we will use the classifier to predict tree type.
+```{r}
+rf.predict<-predict(classifier,test)
+```
+Looking at the confusion matrix.
+```{r}
+confMatrixTree<-table(rf.predict,test$treeType)
+confusionMatrix(confMatrixTree)
+```
+The accuracy of the Random Forest model is XXX.
 ```
