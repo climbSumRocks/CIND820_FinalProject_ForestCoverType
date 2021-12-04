@@ -1,8 +1,10 @@
 ---
-title: "code2"
+title: "Final_Code"
 author: "Haley Aldred"
 date: "04/12/2021"
-output: html_document
+output:
+  html_document: default
+  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -28,7 +30,7 @@ library(e1071)
 library(class)
 library(randomForest)
 ```
-## Data Exploration
+# Data Exploration
 Loading the data.
 ```{r}
 data <- read.csv("~/School/CIND820/data/covtype.data.gz", header=FALSE, stringsAsFactors=TRUE)
@@ -66,9 +68,15 @@ data$soilType<-paste(data$s1,data$s2,data$s3,data$s4,data$s5,data$s6,data$s7,dat
 data$soilTypes<-as.numeric(as.character(data$soilType))
 data$soil<-(40-log(data$soilTypes,10))
 ```
+Next, we will calculated the euclidean distance to water.
+```{r}
+data$edHydro = (data$hHydro^2+data$vHydro^2)^.5
+
+
+```
 Now to delete the useless columns. By eliminating a combined 42 columns, it will make the data easier to work with in the future without losing any critical information.
 ```{r}
-data<-select(data,-c(wild1,wild2,wild3,wild4,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14,s15,s16,s17,s18,s19,s20,s21,s22,s23,s24,s25,s26,s27,s28,s29,s30,s31,s32,s33,s34,s35,s36,s37,s38,s39,s40,wildArea,soilType,soilTypes))
+data<-select(data,-c(hHydro,vHydro,wild1,wild2,wild3,wild4,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14,s15,s16,s17,s18,s19,s20,s21,s22,s23,s24,s25,s26,s27,s28,s29,s30,s31,s32,s33,s34,s35,s36,s37,s38,s39,s40,wildArea,soilType,soilTypes))
 ```
 Verify the process worked.
 ```{r}
@@ -97,6 +105,8 @@ data$areaName[data$area==4] = 'Cache La Poudre'
 Looking at the structure of the data. We will first create a dataset without the names.
 ```{r}
 forest<-select(data,-c(treeName,areaName))
+forest<-forest %>% relocate(treeType,.after=edHydro)
+
 str(forest)
 ```
 Looking at the basic data statistics.
@@ -105,6 +115,7 @@ summary(forest)
 ```
 The mean elevation of the area is 2959 m. The mean distance to water is 269.4 m. The mean distance to roads is 2350 m.The median tree type is number 2, also known as the lodgepole pine.
 The median wilderness area is number 2, also know as Neota, and the median soil type is type 29, also know as Como which contains Legault families complex, extremely stony.
+
 
 The psych package will be used to take a closer look at the data.
 ```{r}
@@ -124,7 +135,7 @@ We will do the same for the wilderness areas and soil types.
 table(data$areaName)
 table(data$soil)
 ```
-## Data Visualization
+# Data Visualization
 Let's look at the distribution of elevation for the data set.
 ```{r}
 ggplot(data, aes(x=elev))+geom_histogram(breaks=seq(1500,4000,by=100),col="black",aes(fill=..count..))+scale_fill_gradient("Count",low="green",high="red")+labs(title="Histogram of Elevation",x="Elevation (m)",y="Count")
@@ -150,41 +161,38 @@ head(corForest)
 Now we will create a correlogram to visualize the correlation matrix.
 ```{r}
 pairs(corForest)
+corrplot.mixed(corForest,lower.col="black",number.cex=0.75)
 ```
-!!!!Describe corrplot
+Negative slopes show a negative correlation, while positive slopes show a positive correlation between two attributes. Attributes with the highest correlation to tree type include area. 
 
-##Data Analysis
-We will split the data into testing and training samples for our detailed analysis. Due to RAM constraints, we will use a small subsection of the large dataset.
+# Data Analysis
+We will split the data into testing and training samples for our detailed analysis. Due to RAM constraints, we will use a small subsection of the large data set.
 ```{r}
 set.seed(42)
-index1<- sample((1/500)*nrow(data), replace = FALSE)
+index1<- sample((1/100)*nrow(data), replace = FALSE)
 data<- data[index1,]
-sample_size=round(nrow(forest)*.70)
-index<-sample(seq_len(nrow(forest)),size=sample_size)
-train<-forest[index, ]
-test<-forest[-index, ]
+forestN<-select(data,-c(treeName,areaName))
+sample_size=round(nrow(forestN)*.70)
+index<-sample(seq_len(nrow(forestN)),size=sample_size)
+train<-forestN[index, ]
+test<-forestN[-index, ]
 ```
-Correlation between the attributes other than tree type.
+## K-Nearest Neighbour Classification
+The K-nearest neighbour algorithm will be used to predict the tree type based on other variables.
 ```{r}
-forest<-forest %>% relocate(treeType,.after=soil)
-datacorr=cor(forest[-13])
-datacorr
-corrplot.mixed(datacorr,lower.col="black",number.cex=0.75)
+k.predict<-knn(train = train[,1:12], test = test[,1:12], cl = as.factor(train$treeType), k = 3)
+plot(k.predict)
 ```
-The K-nearest neighbour algorithm will be used to predict the tree type using its attributes. The data will be split into training and test sets.
+The value for k (number of neighbours) was chosen by running the prediction model with different k values each time. Three was chosen as the best k value because it had the highest accuracy out of all the values tested.
+
+Now let's look at the confusion matrix to determine the accuracy and efficiency of the model.
 ```{r}
-
-predictK<-knn(train = train[,1:12], test = test[,1:12], cl = as.factor(train$treeType), k = 3)
-plot(predictK)
-
+confMatrixK<-table(k.predict,test$treeType)
+confusionMatrix(confMatrixK)
 ```
-Now let's look at the confusion matrix to determine the accuracy and efficiency of the model. -n justify 3 as optimal k
-```{r}
-confMatrix<-table(predictK,test$treeType)
-confusionMatrix(confMatrix)
-```
-The accuracy of the model is XXX
+The accuracy of the model is 81%.
 
+## Random Forest Classification
 Now we will look at the Random Forest Classifier.
 ```{r}
 classifier=randomForest(factor(train$treeType)~.,data=train)
@@ -193,11 +201,14 @@ plot(classifier,main="Random Forest Classification")
 Now we will use the classifier to predict tree type.
 ```{r}
 rf.predict<-predict(classifier,test)
+varImpPlot(classifier,main="Variable Importance")
 ```
+The Variable importance plot shows the mean decrease in node impurity. Therefore elevation is an important indicator of tree type.
+
 Looking at the confusion matrix.
 ```{r}
 confMatrixTree<-table(rf.predict,test$treeType)
 confusionMatrix(confMatrixTree)
 ```
-The accuracy of the Random Forest model is XXX.
+The accuracy of the Random Forest model is 84%.
 ```
